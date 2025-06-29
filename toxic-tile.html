@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Toxic Tile</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #0f1923;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+        }
+        #game-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+        .tile {
+            aspect-ratio: 1;
+            background: #2a475e;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .tile:hover {
+            background: #3d6a8c;
+            transform: translateY(-3px);
+        }
+        .tile.revealed {
+            background: #66c0f4;
+            cursor: default;
+        }
+        .tile.poison {
+            background: #ff5555;
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+        #controls {
+            margin: 20px;
+        }
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>TOXIC TILE</h1>
+    <div id="role-display">Role: Explorer</div>
+    <div id="round-display">Round: 1/5</div>
+    <div id="score-display">Score: 0</div>
+    <div id="game-container"></div>
+    <div id="controls">
+        <button id="new-game">New Game</button>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            round: 1,
+            scores: [0, 0],
+            currentPlayer: 0, // 0=Explorer, 1=Picker
+            poisonTile: null,
+            revealedTiles: []
+        };
+
+        // Initialize game
+        function initGame() {
+            gameState = {
+                round: 1,
+                scores: [0, 0],
+                currentPlayer: 0,
+                poisonTile: null,
+                revealedTiles: []
+            };
+            renderGame();
+        }
+
+        // Render game board
+        function renderGame() {
+            const container = document.getElementById('game-container');
+            container.innerHTML = '';
+            
+            // Create 10 tiles
+            for (let i = 0; i < 10; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.textContent = i + 1;
+                tile.dataset.index = i;
+                
+                if (gameState.revealedTiles.includes(i)) {
+                    tile.classList.add('revealed');
+                    if (i === gameState.poisonTile) {
+                        tile.classList.add('poison');
+                    }
+                }
+                
+                tile.addEventListener('click', () => handleTileClick(i));
+                container.appendChild(tile);
+            }
+            
+            // Update UI
+            document.getElementById('role-display').textContent = 
+                `Role: ${gameState.currentPlayer === 0 ? 'Explorer' : 'Picker'}`;
+            document.getElementById('round-display').textContent = 
+                `Round: ${gameState.round}/5`;
+            document.getElementById('score-display').textContent = 
+                `Score: ${gameState.scores[0]} | ${gameState.scores[1]}`;
+        }
+
+        // Handle tile clicks
+        function handleTileClick(index) {
+            if (gameState.currentPlayer === 1) {
+                // Picker selecting poison
+                gameState.poisonTile = index;
+                gameState.currentPlayer = 0;
+                alert('Poison tile set! Switch players.');
+            } else {
+                // Explorer revealing tiles
+                if (index === gameState.poisonTile) {
+                    // Hit poison
+                    gameState.revealedTiles.push(index);
+                    renderGame();
+                    alert('BOOM! Poison tile found. No points this round.');
+                    endRound();
+                } else if (!gameState.revealedTiles.includes(index)) {
+                    // Safe tile
+                    gameState.revealedTiles.push(index);
+                    gameState.scores[0]++;
+                    renderGame();
+                    
+                    // Check for perfect round
+                    if (gameState.revealedTiles.length === 9) {
+                        gameState.scores[0] += 3;
+                        alert('Perfect! +3 bonus points!');
+                        endRound();
+                    }
+                }
+            }
+        }
+
+        // End current round
+        function endRound() {
+            gameState.round++;
+            gameState.currentPlayer = 1;
+            gameState.poisonTile = null;
+            gameState.revealedTiles = [];
+            
+            if (gameState.round > 5) {
+                // Game over
+                const winner = gameState.scores[0] > gameState.scores[1] ? 
+                    'Explorer wins!' : 'Picker wins!';
+                alert(`Game over! ${winner} Final scores: ${gameState.scores[0]} - ${gameState.scores[1]}`);
+                initGame();
+            } else {
+                renderGame();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('new-game').addEventListener('click', initGame);
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
